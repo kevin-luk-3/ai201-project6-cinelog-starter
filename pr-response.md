@@ -35,7 +35,10 @@ Ran `pytest tests/ -v` — all existing collection tests still pass. Manually tr
 
 ## Comment 3 — Missing test
 **What I did:**
+Created `tests/test_watchlist.py` with `test_add_to_watchlist_nonexistent_film_raises`, modeled directly on `test_add_to_collection_nonexistent_film_raises` in `tests/test_collection.py` — same fixture pattern (`app`, `sample_user`), same docstring, same `fake_film_id`, same `pytest.raises(FilmNotFoundError)` assertion, calling `add_to_watchlist()` instead of `add_to_collection()`.
+
 **How I verified:**
+Ran `pytest tests/test_watchlist.py -v` — the new test passes. Ran `pytest tests/ -v` — full suite passes.
 
 ## Comment 4 — Default visibility
 **My position:**
