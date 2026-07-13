@@ -16,7 +16,22 @@ Searched the entire project for `save_to_watchlist` using ripgrep (`rg save_to_w
 
 ## Comment 2 — Deduplication
 **What I did:**
+Added deduplication to `add_to_watchlist()` in `services/watchlist_service.py`, following the same pattern as `add_to_collection()` in `services/collection_service.py`.
+
+Changes:
+- Added `AlreadyInWatchlistError` (mirrors `AlreadyInCollectionError` in collection service)
+- Before creating a new `WatchlistEntry`, query for an existing entry with the same `user_id` and `film_id`
+- If a match exists, raise `AlreadyInWatchlistError` instead of inserting a duplicate row
+- Updated the function docstring `Raises:` section to document the new error
+
+Reference pattern from `add_to_collection()`:
+1. Check that the film exists (`FilmNotFoundError`)
+2. Query `filter_by(user_id=..., film_id=...).first()`
+3. If found → raise domain-specific duplicate error
+4. If not found → create and commit the entry
+
 **How I verified:**
+Ran `pytest tests/ -v` — all existing collection tests still pass. Manually traced the logic against `add_to_collection()` in `collection_service.py` (lines 47–53) to confirm the check and error behavior match. A duplicate call to `add_to_watchlist()` with the same `user_id` and `film_id` now raises `AlreadyInWatchlistError` at the service layer instead of creating a second entry.
 
 ## Comment 3 — Missing test
 **What I did:**
