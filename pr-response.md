@@ -42,8 +42,13 @@ Ran `pytest tests/test_watchlist.py -v` — the new test passes. Ran `pytest tes
 
 ## Comment 4 — Default visibility
 **My position:**
+Keep `public=True` as the default on `WatchlistEntry`. This is an intentional product choice, not an accidental SQLAlchemy/`Boolean` default we forgot to think about. No code change — documenting the decision is what was requested.
+
 **Reasoning:**
+CineLog is a community film-tracking app: the product pitch is shared taste, not a private notes app. A watchlist ("want to watch later") is a social signal distinct from a collection entry (already watched/rated). Defaulting new entries to public optimizes for the common community behavior — friends seeing what you plan to watch, suggesting titles, coordinating watch-alongs — without an extra opt-in on every add. Visibility is already modeled per-entry (`public` on `WatchlistEntry`), so someone who wants a private title can flip that one film; the default only picks the path that makes the feature useful on a social platform. Collection has no visibility field at all; watchlist introduced one, so leaving it public by default is consistent with treating watchlists as shareable by design.
+
 **Tradeoff acknowledged:**
+`public=False` would optimize for privacy and least surprise — watchlists can reveal sensitive or awkward taste, and private-by-default prevents accidentally broadcasting intent-to-watch. That would better serve users who treat the list as a personal reminder queue. I prefer public here because CineLog's value is discovery; a private default would bury that unless every user opts in. Privacy-conscious users can still mark entries private; I'd reverse the default if user data showed surprise or mostly-private lists.
 
 ## Comment 5 — Sort order
 **My position:**
