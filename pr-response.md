@@ -52,8 +52,13 @@ CineLog is a community film-tracking app: the product pitch is shared taste, not
 
 ## Comment 5 — Sort order
 **My position:**
+Agree with the maintainer: sort watchlists by `date_added` descending (newest first), not alphabetical. Updated `get_watchlist()` in `services/watchlist_service.py` to match `get_collection()`.
+
 **Reasoning:**
+A watchlist is a queue of intent — "what I just saved / what's top of mind" — not a catalog you scan A–Z. Newest-first matches that use pattern: after you add a film, you expect to see it at the top. It also keeps CineLog consistent: `get_collection()` already uses `CollectionEntry.date_added.desc()`, so two "list my films" endpoints behaving differently would surprise API consumers for no strong reason. Alphabetical still helps find a specific title in a long list, but that's better as an optional client-side/`?sort=` later than as the default that diverges from collection.
+
 **Engagement with reviewer's point:**
+The reviewer said most users want to see what they added recently, and left room to disagree. I agree — for a to-watch queue, recency is the primary access pattern, not title lookup. Alphabetical would optimize the rarer "find this one film by name" case and make the watchlist the only list endpoint with a different default. I'm documenting the decision as date-added / newest first and changing the code accordingly rather than leaving alphabetical in place.
 
 ## Comment 6 — Rebase
 **What conflicted:**
