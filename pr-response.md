@@ -62,8 +62,20 @@ The reviewer said most users want to see what they added recently, and left room
 
 ## Comment 6 — Rebase
 **What conflicted:**
+`main` migrated `Film.id` (and `CollectionEntry.film_id`) from integers to UUIDs (`String(36)`). The watchlist branch still had `WatchlistEntry.film_id` as `Integer`, and service/route docs still described `film_id` as an int. During rebase, `models.py` is the conflict surface: `main`'s version has UUID film IDs but no `WatchlistEntry` at all (watchlist never landed on `main`), while the feature branch has the watchlist model with the old integer FK.
+
 **How I resolved it:**
+Updated models to the post-refactor shape and kept watchlist on top of it:
+- `Film.id` / `CollectionEntry.film_id` → `String(36)` (match `main`)
+- Re-added / kept `WatchlistEntry` with `film_id = db.Column(db.String(36), db.ForeignKey("film.id"))`
+- Updated `add_to_watchlist` docstring and the watchlist route body note from int → UUID string
+- Nonexistent-film test already used a UUID fake id (`00000000-0000-0000-0000-000000000000`), same as collection
+
 **How I verified no conflict remains:**
+After `git rebase origin/main`:
+- `git log --merges origin/main..HEAD` is empty (linear history, no merge commits)
+- `models.py` has no integer `film_id` / `Film.id` left
+- `pytest tests/ -v` passes with UUID film IDs
 
 ## PR Description
 <!-- Written at the end — feature overview, design decisions, manual testing steps -->
