@@ -1,7 +1,15 @@
 # PR Response Doc — CineLog Watchlist Feature
 
 ## AI Usage
-<!-- Fill in at the end — how you used AI tools during this project -->
+Used Cursor (Composer) during this project for:
+
+- **Codebase orientation:** Summarizing `models.py`, `collection_service.py`, and test patterns before addressing review comments; verified against the actual source.
+- **Comment 2:** Explained how `add_to_collection()` handles deduplication so I could mirror that pattern in `add_to_watchlist()` myself.
+- **Comments 4 & 5:** Drafted positions first, then used AI to stress-test tradeoffs (privacy-by-default; alphabetical findability). Final arguments in this doc are mine and grounded in CineLog’s community / watchlist-vs-collection context.
+- **Comment 6 / rebase:** Helped identify the integer→UUID conflict and the “WatchlistEntry missing after rebase onto main” gotcha; I ran the git commands and force-pushed myself.
+- **Milestone 4:** Checked conventional-commit format against `git log` and rewrote the starter commit message via interactive rebase.
+
+AI was used for orientation and review of drafts, not to invent the design decisions.
 
 ## Comment 1 — Rename
 **What I did:**
@@ -78,4 +86,44 @@ After `git rebase origin/main`:
 - `pytest tests/ -v` passes with UUID film IDs
 
 ## PR Description
-<!-- Written at the end — feature overview, design decisions, manual testing steps -->
+*(Also paste into the GitHub PR: `feature/watchlist` → `main`.)*
+
+### What this feature does
+Adds a **watchlist** to CineLog: films a user wants to watch later, separate from their collection (films already watched). Includes the `WatchlistEntry` model, `add_to_watchlist` / `get_watchlist` service functions, and REST endpoints:
+
+- `GET /watchlist/<user_id>` — list the user’s watchlist (newest first)
+- `POST /watchlist/<user_id>/add` — add a film (`{ "film_id": "<uuid>" }`)
+
+Adds are deduplicated (`AlreadyInWatchlistError`), unknown films raise `FilmNotFoundError`, and each entry has a per-entry `public` visibility flag. Film IDs are UUIDs after rebasing onto the main refactor.
+
+### Design decisions
+1. **Default visibility: `public=True`.** Watchlists are public by default so CineLog’s community features (friends seeing what you plan to watch) work without an opt-in every time; users can still mark individual entries private. See Comment 4.
+2. **Sort order: `date_added` descending.** Watchlists sort newest-first, matching `get_collection()` and the “just saved / queue of intent” use case, instead of alphabetical. See Comment 5.
+
+### How to manually test
+1. Install and start:
+   ```bash
+   pip install -r requirements.txt
+   python app.py
+   ```
+   (Browsing `/` returns 404 — expected; this is a JSON API.)
+2. Create a user and film, print IDs:
+   ```bash
+   python -c "from app import create_app, db; from models import User, Film; app=create_app();
+   ctx=app.app_context(); ctx.push(); u=User(username='demo', email='demo@example.com'); f=Film(title='Arrival', year=2016); db.session.add_all([u,f]); db.session.commit(); print(u.id, f.id)"
+   ```
+3. Exercise the API (replace `USER_ID` / `FILM_ID`):
+   ```bash
+   curl -X POST http://127.0.0.1:5000/watchlist/USER_ID/add -H "Content-Type: application/json" -d "{\"film_id\": \"FILM_ID\"}"
+   curl -X POST http://127.0.0.1:5000/watchlist/USER_ID/add -H "Content-Type: application/json" -d "{\"film_id\": \"FILM_ID\"}"
+   curl -X POST http://127.0.0.1:5000/watchlist/USER_ID/add -H "Content-Type: application/json" -d "{\"film_id\": \"00000000-0000-0000-0000-000000000000\"}"
+   curl http://127.0.0.1:5000/watchlist/USER_ID
+   ```
+   Expect: first add succeeds; duplicate fails; fake UUID not found; GET returns newest first.
+4. Or run: `pytest tests/ -v`
+
+### Commit history screenshot
+`git log --oneline origin/main..HEAD` on `feature/watchlist` (linear, conventional commits, no merge commits):
+
+![git log --oneline on feature/watchlist](./docs/git-log.png)
+
